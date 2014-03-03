@@ -12,12 +12,15 @@ import (
 
 var witAccessToken string
 
+//You need to get a wit access token to use their services
 func init() {
 	flag.StringVar(&witAccessToken, "witAccessToken", "", "Your WIT access token")
 }
 
+//FetchIntent is the whole go wit wrapper, if you call it that.
+//We send the query string to wit, parse the result json
+//into a struct and return it.
 func FetchIntent(str string) WitMessage {
-	log.Println(str)
 
 	url := "https://api.wit.ai/message?q=" + url.QueryEscape(str)
 	client := &http.Client{}
@@ -50,6 +53,9 @@ func FetchIntent(str string) WitMessage {
 	return jsonResponse
 
 }
+
+//These make up the different parts of the wit result
+//There are more options, but I'm using only these so far.
 
 type WitMessage struct {
 	MsgId   string            `json:"msg_id"`

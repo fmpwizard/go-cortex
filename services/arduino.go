@@ -15,6 +15,7 @@ import (
 var c *goserial.Config = &goserial.Config{}
 var s io.ReadWriteCloser
 
+//We init the usb connection only once, at boot time.
 func init() {
 	// Find the device that represents the arduino serial
 	// connection.
@@ -24,6 +25,8 @@ func init() {
 
 }
 
+//Arduino converts the string command (on/off) to the one leter command
+// the arduino board expects. And call sendArduinoCommand
 func Arduino(command string, light int) {
 	var arduinoCmd byte
 	if command == "on" {
