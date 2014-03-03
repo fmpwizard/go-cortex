@@ -17,6 +17,7 @@ func init() {
 }
 
 func FetchIntent(str string) WitMessage {
+	log.Println(str)
 
 	url := "https://api.wit.ai/message?q=" + url.QueryEscape(str)
 	client := &http.Client{}

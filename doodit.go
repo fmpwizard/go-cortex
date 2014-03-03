@@ -2,27 +2,33 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/fmpwizard/doodit/services"
-	"log"
+	"net/http"
 )
-
-var message string
-
-func init() {
-	flag.StringVar(&message, "q", "Turn the lights on", "Message to process")
-}
 
 func main() {
 	flag.Parse()
-	ProcessIntent(services.FetchIntent(message))
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8080", nil)
 }
 
-func ProcessIntent(jsonResponse services.WitMessage) {
+func handler(w http.ResponseWriter, r *http.Request) {
+	message := r.FormValue("q")
+	if len(message) > 0 {
+		ret := ProcessIntent(services.FetchIntent(message))
+		fmt.Fprintf(w, ret)
+	}
+}
+
+func ProcessIntent(jsonResponse services.WitMessage) string {
 	switch jsonResponse.Outcome.Intent {
 	case "lights":
 		light := jsonResponse.Outcome.Entities.Number.Value
 		action := jsonResponse.Outcome.Entities.OnOff.Value
-		log.Printf("Turning light %v %s", light, action)
+		ret := fmt.Sprintf("Turning light %v %s", light, action)
 		services.Arduino(action, light)
+		return ret
 	}
+	return ""
 }
