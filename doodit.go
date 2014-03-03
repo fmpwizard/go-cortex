@@ -6,17 +6,15 @@ import (
 	"log"
 )
 
-var witAccessToken string
 var message string
 
 func init() {
-	flag.StringVar(&witAccessToken, "witAccessToken", "", "Your WIT access token")
 	flag.StringVar(&message, "q", "Turn the lights on", "Message to process")
 }
 
 func main() {
 	flag.Parse()
-	ProcessIntent(services.FetchIntent(message, witAccessToken))
+	ProcessIntent(services.FetchIntent(message))
 }
 
 func ProcessIntent(jsonResponse services.WitMessage) {

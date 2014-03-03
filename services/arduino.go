@@ -1,5 +1,7 @@
 package services
 
+//Most code on this page is from http://reprage.com/post/using-golang-to-connect-raspberrypi-and-arduino/
+
 import (
 	"bytes"
 	"encoding/binary"

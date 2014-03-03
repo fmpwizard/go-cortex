@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,7 +10,13 @@ import (
 	"net/url"
 )
 
-func FetchIntent(str, witAccessToken string) WitMessage {
+var witAccessToken string
+
+func init() {
+	flag.StringVar(&witAccessToken, "witAccessToken", "", "Your WIT access token")
+}
+
+func FetchIntent(str string) WitMessage {
 
 	url := "https://api.wit.ai/message?q=" + url.QueryEscape(str)
 	client := &http.Client{}
