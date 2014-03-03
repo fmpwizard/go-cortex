@@ -10,18 +10,21 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
-	"time"
 )
 
-func Arduino(command string, light int) {
+var c *goserial.Config = &goserial.Config{}
+var s io.ReadWriteCloser
+
+func init() {
 	// Find the device that represents the arduino serial
 	// connection.
-	c := &goserial.Config{Name: findArduino(), Baud: 9600}
+	c = &goserial.Config{Name: findArduino(), Baud: 9600}
 	log.Printf("the port we will use is %v\n\n", findArduino())
-	s, _ := goserial.OpenPort(c)
-	// When connecting to an older revision Arduino, you need to wait
-	// a little while it resets.
-	time.Sleep(2 * time.Second)
+	s, _ = goserial.OpenPort(c)
+
+}
+
+func Arduino(command string, light int) {
 	var arduinoCmd byte
 	if command == "on" {
 		arduinoCmd = 'u'
