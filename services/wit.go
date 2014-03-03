@@ -25,10 +25,10 @@ func FetchIntent(str string) WitMessage {
 	res, err := client.Do(req)
 
 	if err != nil {
-		log.Fatalf("Requesting wit's api gave: ", err)
+		log.Fatalf("Requesting wit's api gave: %v", err)
 	}
 	if res.StatusCode == 401 {
-		log.Fatalf("Access denied, check your wit access token ")
+		log.Fatalln("Access denied, check your wit access token ")
 	}
 
 	intent, _ := ioutil.ReadAll(res.Body)
