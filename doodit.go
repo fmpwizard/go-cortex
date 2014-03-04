@@ -10,7 +10,7 @@ import (
 func main() {
 	flag.Parse()
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":7070", nil)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
