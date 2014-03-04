@@ -7,10 +7,17 @@ import (
 	"net/http"
 )
 
+var httpPort string
+
+//You need to get a wit access token to use their services
+func init() {
+	flag.StringVar(&httpPort, "httpPort", "7070", "Port number to listen for questions.")
+}
+
 func main() {
 	flag.Parse()
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":7070", nil)
+	http.ListenAndServe(fmt.Sprintf(":%v", httpPort), nil)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
