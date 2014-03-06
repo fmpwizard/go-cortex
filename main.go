@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/fmpwizard/cortex/services"
+	"github.com/fmpwizard/go-cortex/services"
 	"net/http"
 )
 
