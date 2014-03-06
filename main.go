@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/fmpwizard/doodit/services"
+	"github.com/fmpwizard/cortex/services"
 	"net/http"
 )
 
