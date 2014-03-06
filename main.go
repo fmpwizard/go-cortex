@@ -28,6 +28,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		ret := ProcessIntent(services.FetchIntent(message))
 		//print what we understood from your request to the browser.
 		fmt.Fprintf(w, ret)
+	} else {
+		fmt.Fprintf(w, "Please add a ?q=<text here> to the url")
 	}
 }
 
