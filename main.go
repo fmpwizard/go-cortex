@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/fmpwizard/go-cortex/services"
+	"log"
 	"net/http"
 )
 
@@ -16,8 +17,24 @@ func init() {
 
 func main() {
 	flag.Parse()
+	listenForCommands()
+
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(fmt.Sprintf(":%v", httpPort), nil)
+}
+
+func listenForCommands() {
+	log.Println("1- listening for commands.")
+	intent := make(chan services.WitMessage)
+	go services.ArduinoIn(intent)
+	go func() {
+		select {
+		case ret := <-intent:
+			log.Printf("Got intent %v\n", ret)
+			ProcessIntent(ret)
+			listenForCommands()
+		}
+	}()
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {

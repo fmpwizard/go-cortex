@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+	"time"
 )
 
 var c *goserial.Config = &goserial.Config{}
@@ -84,4 +85,35 @@ func sendArduinoCommand(command byte, argument uint32, serialPort io.ReadWriteCl
 	}
 
 	return nil
+}
+
+func readFromArduino(serialPort io.ReadWriteCloser, intentCh chan WitMessage) error {
+	if serialPort == nil {
+		return nil
+	}
+	// Read bytes from the serial port.
+	buf := make([]byte, 128)
+	n, err := s.Read(buf)
+	if err != nil {
+		time.Sleep(500 * time.Millisecond)
+		log.Println("Calling ArduinoIn() again.")
+		ArduinoIn(intentCh)
+	}
+	log.Printf("From the arduino we got: %v", string(buf[:n]))
+	intent, err := RecordCommand()
+	if err != nil {
+		log.Printf("got err %v", err)
+		return err
+	}
+	log.Printf("got intent %v", intent)
+
+	intentCh <- intent
+
+	return nil
+}
+
+func ArduinoIn(intentCh chan WitMessage) {
+	for {
+		readFromArduino(s, intentCh)
+	}
 }

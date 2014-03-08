@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -45,9 +46,15 @@ func FetchIntent(str string) WitMessage {
 //FetchVoiceIntent is like FetchIntent, but sends a wav file
 // to the speech endpoint, Wit extracts the text from the sound file
 //and then returns a json response with all the info we need.
-func FetchVoiceIntent(filePath string) WitMessage {
+func FetchVoiceIntent(filePath string) (WitMessage, error) {
 	log.Println("reading file")
 	body, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Printf("error: %v reading file", err)
+	}
+	if len(body) == 0 {
+		return WitMessage{}, errors.New("No sound in file")
+	}
 
 	url := "https://api.wit.ai/speech"
 	client := &http.Client{}
@@ -65,7 +72,7 @@ func FetchVoiceIntent(filePath string) WitMessage {
 		log.Fatalln("Access denied, check your wit access token ")
 	}
 
-	return processWitResponse(res.Body)
+	return processWitResponse(res.Body), nil
 
 }
 
