@@ -7,7 +7,7 @@ In the background it uses [Wit.ai](https://wit.ai/) to process the text and get 
 
 ## Example
 
-At home I have a raspberrypi connected to an Arduino board with 6 LEDs. I can go on my browser to `http://raspberrypi:8080/?q=turn+light+6+on` and cortex will send the text `turn light 6 on` to wit and get back the intent `light`, with two parameters, one is the number `6` and the other is `on`.
+At home I have a raspberrypi connected to an Arduino board with 6 LEDs. I can go on my browser to [http://fmpwizard.no-ip.org:8080/?q=turn+light+6+on](http://fmpwizard.no-ip.org:8080/?q=turn+light+6+on) and cortex will send the text `turn light 6 on` to wit and get back the intent `light`, with two parameters, one is the number `6` and the other is `on`.
 
 The beauty here is that I can write different kinds of sentences that mean the same, and wit will do the heavy work of trying to understand them.
 

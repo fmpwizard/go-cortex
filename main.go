@@ -41,9 +41,8 @@ func ProcessIntent(jsonResponse services.WitMessage) string {
 	case "lights":
 		light := jsonResponse.Outcome.Entities.Number.Value
 		action := jsonResponse.Outcome.Entities.OnOff.Value
-		ret := fmt.Sprintf("Turning light %v %s", light, action)
 		services.Arduino(action, light)
-		return ret
+		return fmt.Sprintf("Turning light %v %s", light, action)
 	}
 	return ""
 }
