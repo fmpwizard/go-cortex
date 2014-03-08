@@ -5,6 +5,10 @@ to do what you asked for.
 
 In the background it uses [Wit.ai](https://wit.ai/) to process the text and get back an `intent` with some parameters extracted from the sentence.
 
+##Announcement
+
+I wrote a post explaining `go-cortex`: [Go Cortex - using Wit.ai on a raspberry pi connected to an arduino and written in go](http://goo.gl/4yy9bI)
+
 ## Example
 
 At home I have a raspberrypi connected to an Arduino board with 6 LEDs. I can go on my browser to [http://fmpwizard.no-ip.org:8080/?q=turn+light+6+on](http://fmpwizard.no-ip.org:8080/?q=turn+light+6+on) and cortex will send the text `turn light 6 on` to wit and get back the intent `light`, with two parameters, one is the number `6` and the other is `on`.
