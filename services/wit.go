@@ -1,9 +1,11 @@
 package services
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -27,6 +29,7 @@ func FetchIntent(str string) WitMessage {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", witAccessToken))
 	res, err := client.Do(req)
+	defer res.Body.Close()
 
 	if err != nil {
 		log.Fatalf("Requesting wit's api gave: %v", err)
@@ -35,20 +38,53 @@ func FetchIntent(str string) WitMessage {
 		log.Fatalln("Access denied, check your wit access token ")
 	}
 
-	intent, _ := ioutil.ReadAll(res.Body)
-	res.Body.Close()
+	return processWitResponse(res.Body)
+
+}
+
+//FetchVoiceIntent is like FetchIntent, but sends a wav file
+// to the speech endpoint, Wit extracts the text from the sound file
+//and then returns a json response with all the info we need.
+func FetchVoiceIntent(filePath string) WitMessage {
+	log.Println("reading file")
+	body, err := ioutil.ReadFile(filePath)
+
+	url := "https://api.wit.ai/speech"
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", witAccessToken))
+	req.Header.Add("Content-Type", "audio/wav")
+	log.Println("sending request")
+	res, err := client.Do(req)
+	defer res.Body.Close()
+
+	if err != nil {
+		log.Fatalf("Requesting wit's api gave: %v", err)
+	}
+	if res.StatusCode == 401 {
+		log.Fatalln("Access denied, check your wit access token ")
+	}
+
+	return processWitResponse(res.Body)
+
+}
+
+//processWitResponse gets the raw response from the http request, and
+//returns a WitMessage with all the information we got from Wit
+func processWitResponse(message io.ReadCloser) WitMessage {
+	intent, _ := ioutil.ReadAll(message)
 
 	jsonString := string(intent[:])
 	_ = jsonString
 
 	var jsonResponse WitMessage
-	err = json.Unmarshal(intent, &jsonResponse)
+	err := json.Unmarshal(intent, &jsonResponse)
 	if err != nil {
 		log.Println("error parsing json: ", err)
 	}
 
-	//log.Printf("%+v\n\n\n", jsonResponse)
-	//log.Printf("%+v\n\n\n", jsonString)
+	log.Printf("%+v\n\n\n", jsonResponse)
+	log.Printf("%+v\n\n\n", jsonString)
 
 	return jsonResponse
 
