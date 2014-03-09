@@ -96,7 +96,7 @@ func readFromArduino(serialPort io.ReadWriteCloser, intentCh chan WitMessage) er
 	n, err := s.Read(buf)
 	if err != nil {
 		time.Sleep(500 * time.Millisecond)
-		log.Println("Calling ArduinoIn() again.")
+		//log.Println("Calling ArduinoIn() again.")
 		ArduinoIn(intentCh)
 	}
 	log.Printf("From the arduino we got: %v", string(buf[:n]))
@@ -105,10 +105,8 @@ func readFromArduino(serialPort io.ReadWriteCloser, intentCh chan WitMessage) er
 		log.Printf("got err %v", err)
 		return err
 	}
-	log.Printf("got intent %v", intent)
 
 	intentCh <- intent
-
 	return nil
 }
 

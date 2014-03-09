@@ -23,6 +23,13 @@ func main() {
 	http.ListenAndServe(fmt.Sprintf(":%v", httpPort), nil)
 }
 
+//listenForCommands starts listening for the Arduino command
+// to start recording a voice command.
+//Once we get a voice command, the ARduino service will
+//send it to Wit and then the intent channel will get the
+// go struct with the information we need.
+//We then call ProcessIntent and start listening for
+//a new Arduino command.
 func listenForCommands() {
 	log.Println("1- listening for commands.")
 	intent := make(chan services.WitMessage)
@@ -30,7 +37,7 @@ func listenForCommands() {
 	go func() {
 		select {
 		case ret := <-intent:
-			log.Printf("Got intent %v\n", ret)
+			log.Printf("Got intent %+v\n", ret)
 			ProcessIntent(ret)
 			listenForCommands()
 		}
