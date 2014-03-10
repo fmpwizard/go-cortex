@@ -9,7 +9,7 @@ import (
 func RecordCommand() (WitMessage, error) {
 	log.Println("about to record")
 	// the parameters "-t", "alsa", "hw:1,0" are for the raspberry pi, as it uses a USB microphone
-	cmd := exec.Command("sox", "-t", "alsa", "hw:1,0", "-d", "-b", "16", "-c", "1", "-r", "16k", "command.wav", "silence", "1", "0.1", "3%", "1", "3.0", "3%")
+	cmd := exec.Command("sox", "-t", "alsa", "hw:1,0", "-b", "16", "-c", "1", "-r", "16k", "command.wav", "silence", "1", "0.1", "3%", "1", "3.0", "3%")
 	err := cmd.Start()
 	if err != nil {
 		log.Fatal(err)
@@ -31,6 +31,7 @@ func RecordCommand() (WitMessage, error) {
 	case err := <-commandDone:
 		if err != nil {
 			log.Printf("process done with error = %v", err)
+			return
 		}
 	}
 
