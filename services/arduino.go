@@ -103,7 +103,7 @@ func readFromArduino(serialPort io.ReadWriteCloser, intentCh chan WitMessage) er
 	intent, err := RecordCommand()
 	if err != nil {
 		log.Printf("got err %v", err)
-		return WitMessage{}, err
+		return err
 	}
 
 	intentCh <- intent

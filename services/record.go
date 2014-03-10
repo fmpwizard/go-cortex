@@ -31,7 +31,7 @@ func RecordCommand() (WitMessage, error) {
 	case err := <-commandDone:
 		if err != nil {
 			log.Printf("process done with error = %v", err)
-			return
+			return WitMessage{}, err
 		}
 	}
 
