@@ -16,7 +16,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/wit", handler)
 	http.ListenAndServe(fmt.Sprintf(":%v", httpPort), nil)
 }
 
@@ -25,24 +25,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	// the wit service
 	message := r.FormValue("q")
 	if len(message) > 0 {
-		ret := ProcessIntent(services.FetchIntent(message))
+		ret := services.ProcessIntent(services.FetchIntent(message))
 		//print what we understood from your request to the browser.
 		fmt.Fprintf(w, ret)
 	} else {
 		fmt.Fprintf(w, "Please add a ?q=<text here> to the url")
 	}
-}
-
-//ProcessIntent gets the json parsed result from wit.ai and
-//depending on the intent, it calles the right service.
-//So far we only have one service, the Arduino lights service
-func ProcessIntent(jsonResponse services.WitMessage) string {
-	switch jsonResponse.Outcome.Intent {
-	case "lights":
-		light := jsonResponse.Outcome.Entities.Number.Value
-		action := jsonResponse.Outcome.Entities.OnOff.Value
-		services.Arduino(action, light)
-		return fmt.Sprintf("Turning light %v %s", light, action)
-	}
-	return ""
 }

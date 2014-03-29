@@ -58,3 +58,6 @@ go-cortex --witAccessToken=<token here with no quotes> -httpPort=8080
 
 and you are ready, if you are running this locally, go to `http://127.0.0.1:8080?q=<some command here>` and see the magic
 
+##SMS
+
+Using https://dashboard.nexmo.com
