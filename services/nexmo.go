@@ -5,10 +5,12 @@ import (
 	"net/http"
 )
 
+//Add a handler for the /sms path
 func init() {
 	http.HandleFunc("/sms", handler)
 }
 
+//Handle the GET requests from nexmo
 func handler(w http.ResponseWriter, r *http.Request) {
 	//A sample request from the nexmo service is
 	//?msisdn=19150000001&to=12108054321
