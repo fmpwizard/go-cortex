@@ -21,7 +21,7 @@ func init() {
 	// Find the device that represents the arduino serial
 	// connection.
 	c = &goserial.Config{Name: findArduino(), Baud: 9600}
-	log.Printf("the port we will use is %v\n\n", findArduino())
+	log.Printf("the USB port the Arduino service will use is %v\n\n", findArduino())
 	s, _ = goserial.OpenPort(c)
 
 }

@@ -97,6 +97,20 @@ func processWitResponse(message io.ReadCloser) WitMessage {
 
 }
 
+//ProcessIntent gets the json parsed result from wit.ai and
+//depending on the intent, it calles the right service.
+//So far we only have one service, the Arduino lights service
+func ProcessIntent(jsonResponse WitMessage) string {
+	switch jsonResponse.Outcome.Intent {
+	case "lights":
+		light := jsonResponse.Outcome.Entities.Number.Value
+		action := jsonResponse.Outcome.Entities.OnOff.Value
+		Arduino(action, light)
+		return fmt.Sprintf("Turning light %v %s", light, action)
+	}
+	return ""
+}
+
 //These make up the different parts of the wit result
 //There are more options, but I'm using only these so far.
 
