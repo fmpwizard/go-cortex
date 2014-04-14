@@ -1,34 +1,50 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/fmpwizard/go-cortex/services"
+	"io/ioutil"
+	"log"
 	"net/http"
 )
 
-var httpPort string
+var configFile string
+var config CortexConfig
 
-//You need to get a wit access token to use their services
 func init() {
-	flag.StringVar(&httpPort, "httpPort", "7070", "Port number to listen for questions.")
+	flag.StringVar(&configFile, "config", "", "path to cortex.config.json file.")
 }
 
 func main() {
 	flag.Parse()
-	http.HandleFunc("/wit", handler)
-	http.ListenAndServe(fmt.Sprintf(":%v", httpPort), nil)
+	readCortexConfig()
+
+	go func() {
+		ListenStream()
+	}()
+
+	http.HandleFunc("/wit", WitHandler)
+	http.HandleFunc("/sms", NexmoHandler)
+	http.ListenAndServe(fmt.Sprintf(":%v", config.HttpPort), nil)
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	//read the "q" GET query parameter and pass it to
-	// the wit service
-	message := r.FormValue("q")
-	if len(message) > 0 {
-		ret := services.ProcessIntent(services.FetchIntent(message))
-		//print what we understood from your request to the browser.
-		fmt.Fprintf(w, ret)
-	} else {
-		fmt.Fprintf(w, "Please add a ?q=<text here> to the url")
+func readCortexConfig() {
+	configBytes, error := ioutil.ReadFile(configFile)
+	if error != nil {
+		log.Fatalf("Could not read config file, error: %+v", error)
 	}
+	error = json.Unmarshal(configBytes, &config)
+	if error != nil {
+		log.Fatalf("Could not parse json file, got: %+v", error)
+	}
+	log.Printf("Using configuration: %+v", config)
+}
+
+type CortexConfig struct {
+	HttpPort            string
+	FlowdockAccessToken string
+	WitAccessToken      string
+	Flows               string
+	FlowsTicketsUrls    []map[string]string
 }

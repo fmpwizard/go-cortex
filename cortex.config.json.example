@@ -1,0 +1,9 @@
+{
+  "httpPort": "7070",
+  "flowdockAccessToken": "token here", 
+  "witAccessToken" : "token here",
+  "flows": "fmpwizard/mission-control,fmpwizard/another-flow-here",
+  "flowsTicketsUrls" : [
+    {"mission-control":  "https://github.com/fmpwizard/go-cortex/issues/"}
+  ]
+}

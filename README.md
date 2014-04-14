@@ -11,10 +11,12 @@ I wrote a post explaining `go-cortex`: [Go Cortex - using Wit.ai on a raspberry 
 
 And on [this post](http://blog.fmpwizard.com/blog/using-voice-recognition-and-an-ultrasonic-sensor) I added voice recognition for commands.
 
+[Here](http://blog.fmpwizard.com/blog/voice-command-for-arduino-and-raspberry-pi-using-sms) I'm using Google Now to send an SMS to Cortex and have it turn lights on or off.
+
 
 ## Example
 
-At home I have a raspberrypi connected to an Arduino board with 6 LEDs. I can go on my browser to [http://fmpwizard.no-ip.org:8080/?q=turn+light+6+on](http://fmpwizard.no-ip.org:8080/?q=turn+light+6+on) and cortex will send the text `turn light 6 on` to wit and get back the intent `light`, with two parameters, one is the number `6` and the other is `on`.
+At home I have a raspberrypi connected to an Arduino board with 6 LEDs. I can go on my browser to [http://fmpwizard.no-ip.org:8080/wit?q=turn+light+6+on](http://fmpwizard.no-ip.org:8080/wit?q=turn+light+6+on) and cortex will send the text `turn light 6 on` to wit and get back the intent `light`, with two parameters, one is the number `6` and the other is `on`.
 
 The beauty here is that I can write different kinds of sentences that mean the same, and wit will do the heavy work of trying to understand them.
 
@@ -53,11 +55,28 @@ Assuming you already have `go` installed and have `$GOPATH` setup, then type:
 
 ```
 go get github.com/fmpwizard/go-cortex
-go-cortex --witAccessToken=<token here with no quotes> -httpPort=8080 
+go install
+go-cortex --config=cortex.config.json
 ```
 
-and you are ready, if you are running this locally, go to `http://127.0.0.1:8080?q=<some command here>` and see the magic
+A sample cortex.config.json is:
+
+```
+{
+  "httpPort": "7070",
+  "flowdockAccessToken": "token here", 
+  "witAccessToken" : "token here",
+  "flows": "fmpwizard/mission-control,fmpwizard/another-flow-here",
+  "flowsTicketsUrls" : [
+    {"mission-control":  "https://github.com/fmpwizard/go-cortex/issues/"}
+  ]
+}
+```
+
+and you are ready, if you are running this locally, go to `http://127.0.0.1:8080/wit?q=<some command here>` and see the magic
 
 ##SMS
 
-Using https://dashboard.nexmo.com
+I'm using [Nexmo](https://dashboard.nexmo.com) as an SMS gateway. They gave me an US number that I can send a text to, and as soon as they get it, they send data to a callback url that Cortex listens to, `/sms`.
+
+You can see the details of having Cortex listen on that path by looking at `services/nexmo.go`
