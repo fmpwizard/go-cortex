@@ -20,13 +20,18 @@ func main() {
 	flag.Parse()
 	readCortexConfig()
 
-	go func() {
-		ListenStream()
-	}()
+	if config.FlowdockAccessToken != "" {
+		go func() {
+			ListenStream()
+		}()
 
-	http.HandleFunc("/wit", WitHandler)
-	http.HandleFunc("/sms", NexmoHandler)
-	http.ListenAndServe(fmt.Sprintf(":%v", config.HttpPort), nil)
+	}
+	if config.HttpPort != "" {
+		http.HandleFunc("/wit", WitHandler)
+		http.HandleFunc("/sms", NexmoHandler)
+		http.ListenAndServe(fmt.Sprintf(":%v", config.HttpPort), nil)
+	}
+
 }
 
 func readCortexConfig() {
