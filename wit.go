@@ -90,7 +90,6 @@ func ProcessWitResponse(message io.ReadCloser) WitMessage {
 
 	jsonString := string(intent[:])
 	_ = jsonString
-	log.Printf("here is it %v", jsonString)
 
 	var jsonResponse WitMessage
 	err := json.Unmarshal(intent, &jsonResponse)
@@ -103,11 +102,11 @@ func ProcessWitResponse(message io.ReadCloser) WitMessage {
 
 	err = json.Unmarshal(jsonResponse.Outcome.Entities.RawGithub, &numbers)
 	if err != nil {
-		log.Println("1 error parsing number json: ", err)
-		log.Println("string number object is: ", string(jsonResponse.Outcome.Entities.RawGithub))
+		//log.Println("1 error parsing number json: ", err)
+		//log.Println("string number object is: ", string(jsonResponse.Outcome.Entities.RawGithub))
 		err = json.Unmarshal(jsonResponse.Outcome.Entities.RawGithub, &number)
 		if err != nil {
-			log.Println("2 error parsing number json: ", err)
+			//log.Println("2 error parsing number json: ", err)
 		} else {
 			jsonResponse.Outcome.Entities.MultipleNumber = []WitNumber{number}
 		}
@@ -116,8 +115,8 @@ func ProcessWitResponse(message io.ReadCloser) WitMessage {
 		jsonResponse.Outcome.Entities.MultipleNumber = numbers
 	}
 
-	log.Printf("a: %+v\n\n\n", jsonResponse)
-	log.Printf("b: %+v\n\n\n", jsonString)
+	//log.Printf("a: %+v\n\n\n", jsonResponse)
+	//log.Printf("b: %+v\n\n\n", jsonString)
 
 	return jsonResponse
 
@@ -136,7 +135,8 @@ func ProcessIntent(jsonResponse WitMessage) WitResponse {
 			action := jsonResponse.Outcome.Entities.OnOff.Value
 			Arduino(action, light)
 			msg := fmt.Sprintf("Turning light %v %s", light, action)
-			log.Print(msg)
+			_ = msg
+			//log.Print(msg)
 			return WitResponse{
 				WitArduinoResponse{light, action},
 				WitTemperatureResponse{},
@@ -154,8 +154,8 @@ func ProcessIntent(jsonResponse WitMessage) WitResponse {
 	case "github":
 		var issues []int
 		for _, row := range jsonResponse.Outcome.Entities.MultipleNumber {
-			log.Printf("1\n\n%+v\n\n", len(jsonResponse.Outcome.Entities.MultipleNumber))
-			log.Printf("2\n\n%+v\n\n", row)
+			//log.Printf("1\n\n%+v\n\n", len(jsonResponse.Outcome.Entities.MultipleNumber))
+			//log.Printf("2\n\n%+v\n\n", row)
 			issues = append(issues, row.Value)
 		}
 		return WitResponse{

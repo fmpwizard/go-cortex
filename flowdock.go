@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -91,24 +92,28 @@ func ListenStream() {
 		line = bytes.TrimSpace(line)
 		jsonString := string(line[:])
 		_ = jsonString
-		log.Printf("Flowdock stream string response: %v\n\n", jsonString)
+		if len(jsonString) < 4 {
+			log.Fatalln("Got empty response from glowdock, shutting down")
+			os.Exit(1)
+		}
+		//log.Printf("Flowdock stream string response: %v\n\n", jsonString)
 		json.Unmarshal(line, &flowMessage)
 		var parentMessageId = flowMessage.Id
 
 		switch flowMessage.Event {
 		case "message-edit":
 			json.Unmarshal(line, &flowUpdatedMessage)
-			log.Printf("parsed1: %+v\n\n", flowUpdatedMessage)
+			//log.Printf("parsed1: %+v\n\n", flowUpdatedMessage)
 			ret := ProcessIntent(FetchIntent(flowUpdatedMessage.Content.Updated_content))
 			replyToFlow(ret, flowUpdatedMessage.Id, flowUpdatedMessage.Flow)
 		case "message":
-			log.Printf("parsed2: %+v\n\n", flowMessage)
+			//log.Printf("parsed2: %+v\n\n", flowMessage)
 			ret := ProcessIntent(FetchIntent(flowMessage.Content))
 			replyToFlow(ret, flowMessage.Id, flowMessage.Flow)
 		case "comment":
 			if flowMessage.User != "77156" {
 				json.Unmarshal(line, &flowComment)
-				log.Printf("parsed2: %+v\n\n", flowComment)
+				//log.Printf("parsed2: %+v\n\n", flowComment)
 				ret := ProcessIntent(FetchIntent(flowComment.Content.Text))
 				for _, v := range flowComment.Tags {
 					if strings.Contains(v, "influx") {
@@ -118,7 +123,7 @@ func ListenStream() {
 				}
 				replyToFlow(ret, parentMessageId, flowComment.Flow)
 			} else {
-				log.Println("skipping Cortex's message.")
+				//log.Println("skipping Cortex's message.")
 			}
 		}
 	}
@@ -154,8 +159,8 @@ func handleGithub(ret WitResponse, originalMessageId int64, flowId string) {
 			log.Printf("%s", error)
 		}
 
-		log.Println("\n\n\n\n\n\n\n\nflowParametizedName ", flowParametizedName)
-		log.Println("issueUrl ", issueUrl)
+		//log.Println("\n\n\n\n\n\n\n\nflowParametizedName ", flowParametizedName)
+		//log.Println("issueUrl ", issueUrl)
 		url := fmt.Sprintf("just click here: %+v%+v", issueUrl, issue)
 		FlowdockPost(url, originalMessageId, flowId)
 	}
@@ -183,15 +188,16 @@ func FlowdockPost(message string, originalMessageId int64, flowId string) {
 	}
 
 	defer res.Body.Close()
-	log.Printf("sending %+v", message)
+	//log.Printf("sending %+v", message)
 	value, err := ioutil.ReadAll(res.Body)
+	_ = value
 	if err != nil {
 		log.Fatalf("Could not read body, got: %v", err)
 	}
 
-	aa := string(value[:])
-	st := string(payload[:])
-	log.Printf("sending %+v  %+v %+v", st, err, aa)
+	//aa := string(value[:])
+	//st := string(payload[:])
+	//log.Printf("sending %+v  %+v %+v", st, err, aa)
 
 	if res.StatusCode == 401 {
 		log.Fatalln("Access denied, check your wit access token ")
