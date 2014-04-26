@@ -213,44 +213,44 @@ func CToF(c int) int {
 }
 
 type FlowdockMsg struct {
-	Event   string   `json:event`
-	Tags    []string `json:tags`
-	Uuid    string   `json:uuid`
-	Persist bool     `json:persist`
-	Id      int64    `json:id`
-	Flow    string   `json:flow`
+	Event   string
+	Tags    []string
+	Uuid    string
+	Persist bool
+	Id      int64
+	Flow    string
 	Content string
-	Sent    int64  `json:sent`
-	User    string `json:user`
+	Sent    int64
+	User    string
 }
 
 type FlowdockUpdatedMsg struct {
-	Event   string          `json:event`
-	Tags    []string        `json:tags`
-	Uuid    string          `json:uuid`
-	Persist bool            `json:persist`
-	Id      int64           `json:id`
-	Flow    string          `json:flow`
-	Content FlowdockContent `json:content`
-	Sent    int64           `json:sent`
-	User    string          `json:user`
+	Event   string
+	Tags    []string
+	Uuid    string
+	Persist bool
+	Id      int64
+	Flow    string
+	Content FlowdockContent
+	Sent    int64
+	User    string
 }
 
 type FlowdockContent struct {
-	Message         float64 `json:message`
-	Updated_content string  `json:updated_content`
+	Message         float64
+	Updated_content string
 }
 
 type FlowdockComment struct {
-	Event   string                 `json:event`
-	Tags    []string               `json:tags`
-	Uuid    string                 `json:uuid`
-	Persist bool                   `json:persist`
-	Id      int64                  `json:id`
-	Flow    string                 `json:flow`
-	Content FlowdockCommentContent `json:content`
-	Sent    int64                  `json:sent`
-	User    string                 `json:user`
+	Event   string
+	Tags    []string
+	Uuid    string
+	Persist bool
+	Id      int64
+	Flow    string
+	Content FlowdockCommentContent
+	Sent    int64
+	User    string
 }
 
 type FlowdockCommentContent struct {
