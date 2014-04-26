@@ -16,70 +16,40 @@ import (
 	"strings"
 )
 
-var availableFlows []Flows
-
-//FetchFlows fetches all the flows we have access to
-func FetchFlows() {
-	url := fmt.Sprintf("https://%+v@api.flowdock.com/flows", config.FlowdockAccessToken)
-	res, err := http.Get(url)
-	if err != nil {
-		log.Printf("Error getting list of flows: %v", err)
-	}
-	FlowsParse(res.Body)
-}
-
-//FlowsParse parses the json response from flowdock into a struct
-func FlowsParse(body io.ReadCloser) []Flows {
-	flowsAsJon, _ := ioutil.ReadAll(body)
-
-	if ok := json.Unmarshal(flowsAsJon, &availableFlows); ok != nil {
-		log.Printf("Error parsing flows data %+v", ok)
-	}
-	log.Printf("flow data is %+v", availableFlows)
-	return availableFlows
-}
-
-//GetFlowURL given a flow id as string, return the url for the flow
-func GetFlowURL(id string) (string, error) {
-	for _, flow := range availableFlows {
-		if flow.Id == id {
-			return flow.Url, nil
-		}
-	}
-	return "", errors.New("Flow url not found by key " + id)
-}
-
-//GetFlowName given a flow id as string, return the name of the flow
-func GetFlowName(id string) (string, error) {
-	for _, flow := range availableFlows {
-		if flow.Id == id {
-			return flow.Parameterized_name, nil
-		}
-	}
-	return "", errors.New("Flow url not found by key " + id)
-}
-
-//GetIssueURLForFlowName given a flow name, return the issues url for it
-func GetIssueURLForFlowName(parametizedName string) (string, error) {
-	for _, row := range config.FlowsTicketsUrls {
-		url, ok := row[parametizedName]
-		if ok {
-			return url, nil
-		}
-	}
-	return "", errors.New("Could not find issue url for flow: " + parametizedName)
-}
+var availableFlows []flows
 
 //ListenStream starts pulling the flowdock stream api
-func ListenStream() {
-
-	FetchFlows()
+func listenStream() {
+	fetchFlows()
 	res := connectToFlow()
 	defer res.Body.Close()
 	for {
-		flowMessage, line := parseFlowRow(bufio.NewReader(res.Body))
-		processFlowRow(flowMessage, line)
+		processFlowRow(parseFlowRow(bufio.NewReader(res.Body)))
+	}
+}
 
+//fetchFlows fetches all the flows we have access to
+func fetchFlows() {
+	url := fmt.Sprintf("https://%+v@api.flowdock.com/flows", config.FlowdockAccessToken)
+	res, err := http.Get(url)
+	if err != nil {
+		log.Fatalf("Error getting list of flows: %v", err)
+	} else if res.StatusCode != 200 {
+		log.Fatalf("got status code %+v", res.StatusCode)
+	}
+
+	parseAvailableFlows(res.Body)
+	res.Body.Close()
+}
+
+func parseAvailableFlows(body io.ReadCloser) {
+	flowsAsJon, err := ioutil.ReadAll(body)
+	if err != nil {
+		log.Fatalf("error reading body, got: %+v", err)
+	}
+
+	if ok := json.Unmarshal(flowsAsJon, &availableFlows); ok != nil {
+		log.Fatalf("Error parsing flows data %+v", ok)
 	}
 }
 
@@ -93,8 +63,7 @@ func connectToFlow() *http.Response {
 	res, err := client.Do(req)
 	if err != nil {
 		log.Fatalln("could not fetch streaming api ", err)
-	}
-	if res.StatusCode != 200 {
+	} else if res.StatusCode != 200 {
 		log.Fatalf("got error code: %+v from flowdock.\n", res.StatusCode)
 	}
 
@@ -113,9 +82,9 @@ func parseFlowRow(reader *bufio.Reader) (flowdockMsg, []byte) {
 		log.Fatalln("got empty response from flowdock, shutting down")
 		os.Exit(1)
 	}
-	var flowMessage flowdockMsg
-	json.Unmarshal(line, &flowMessage)
-	return flowMessage, line
+	var message flowdockMsg
+	json.Unmarshal(line, &message)
+	return message, line
 }
 
 func processFlowRow(flowMessage flowdockMsg, line []byte) {
@@ -148,6 +117,37 @@ func processFlowRow(flowMessage flowdockMsg, line []byte) {
 	}
 }
 
+//getFlowURL given a flow id as string, return the url for the flow
+func getFlowURL(id string) (string, error) {
+	for _, flow := range availableFlows {
+		if flow.Id == id {
+			return flow.Url, nil
+		}
+	}
+	return "", errors.New("Flow url not found by key " + id)
+}
+
+//getFlowName given a flow id as string, return the name of the flow
+func getFlowName(id string) (string, error) {
+	for _, flow := range availableFlows {
+		if flow.Id == id {
+			return flow.Parameterized_name, nil
+		}
+	}
+	return "", errors.New("Flow url not found by key " + id)
+}
+
+//getIssueURLForFlowName given a flow name, return the issues url for it
+func getIssueURLForFlowName(parametizedName string) (string, error) {
+	for _, row := range config.FlowsTicketsUrls {
+		url, ok := row[parametizedName]
+		if ok {
+			return url, nil
+		}
+	}
+	return "", errors.New("Could not find issue url for flow: " + parametizedName)
+}
+
 func replyToFlow(ret WitResponse, originalMessageID int64, flowID string) {
 	if ret.Temperature.Unit != "" {
 		handleTemperature(ret, originalMessageID, flowID)
@@ -169,57 +169,50 @@ func handleTemperature(ret WitResponse, originalMessageID int64, flowID string) 
 
 func handleGithub(ret WitResponse, originalMessageID int64, flowID string) {
 	for _, issue := range ret.Github.issues {
-		flowParametizedName, error := GetFlowName(flowID)
+		flowParametizedName, error := getFlowName(flowID)
 		if error != nil {
 			log.Printf("Error trying to get parametized flow name for id %v", flowID)
 		}
-		issueURL, error := GetIssueURLForFlowName(flowParametizedName)
+		issueURL, error := getIssueURLForFlowName(flowParametizedName)
 		if error != nil {
 			log.Printf("%s", error)
 		}
 
-		//log.Println("\n\n\n\n\n\n\n\nflowParametizedName ", flowParametizedName)
-		//log.Println("issueURL ", issueURL)
 		url := fmt.Sprintf("just click here: %+v%+v", issueURL, issue)
 		flowdockPost(url, originalMessageID, flowID)
 	}
 }
 
 func flowdockPost(message string, originalMessageID int64, flowID string) {
-	flowURL, err := GetFlowURL(flowID)
+	flowURL, err := getFlowURL(flowID)
 	if err != nil {
-		log.Panicf("Error getting flow id, got %v", err)
+		log.Printf("Error getting flow id, got %v", err)
+		return
 	}
 	url := fmt.Sprintf("%+v/messages/%+v/comments", flowURL, originalMessageID)
-	token := []byte(config.FlowdockAccessToken)
-	str := base64.StdEncoding.EncodeToString(token)
+	token := base64.StdEncoding.EncodeToString([]byte(config.FlowdockAccessToken))
 	client := &http.Client{}
 	payload := []byte(`{
 	  "event": "comment",
 	  "content":"` + message + `"}`)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(payload))
-	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", str))
+	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
 	req.Header.Add("Content-type", "application/json")
 	res, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("Posting a message to Flowdock gave: %v", err)
+		log.Printf("Error posting a message to Flowdock: %v", err)
+		return
+	} else if res.StatusCode != 200 {
+		log.Printf("We got a non 200 code: %+v\n", res.StatusCode)
+		return
 	}
 
 	defer res.Body.Close()
-	//log.Printf("sending %+v", message)
 	value, err := ioutil.ReadAll(res.Body)
 	_ = value
 	if err != nil {
 		log.Fatalf("Could not read body, got: %v", err)
-	}
-
-	//aa := string(value[:])
-	//st := string(payload[:])
-	//log.Printf("sending %+v  %+v %+v", st, err, aa)
-
-	if res.StatusCode == 401 {
-		log.Fatalln("Access denied, check your wit access token ")
 	}
 }
 
@@ -280,8 +273,8 @@ type flowdockCommentContent struct {
 	Text  string
 }
 
-//Flows struct that holds information about all the flows we can access
-type Flows struct {
+//flows struct that holds information about all the flows we can access
+type flows struct {
 	Id                 string
 	Name               string
 	Parameterized_name string

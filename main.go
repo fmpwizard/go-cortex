@@ -23,7 +23,7 @@ func main() {
 
 	if config.FlowdockAccessToken != "" {
 		go func() {
-			ListenStream()
+			listenStream()
 		}()
 
 	}

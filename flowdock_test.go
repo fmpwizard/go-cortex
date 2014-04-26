@@ -6,23 +6,23 @@ import (
 )
 
 func TestFlowsParse(t *testing.T) {
-	parsedFlows := FlowsParse(NopCloser{NopCloser{bytes.NewBufferString(MockedFlows)}})
-	if len(parsedFlows) != 2 {
-		t.Errorf("FlowsParse didn't parse payload, gave %+v", parsedFlows)
+	parseAvailableFlows(NopCloser{NopCloser{bytes.NewBufferString(MockedFlows)}})
+	if len(availableFlows) != 2 {
+		t.Errorf("parseAvailableFlows didn't parse payload, gave %+v", availableFlows)
 	}
 }
 
 func TestGetFlowUrl(t *testing.T) {
-	url, _ := GetFlowURL("aaaaaaaa-d97b-0000-1111-555598671f8c")
+	url, _ := getFlowURL("aaaaaaaa-d97b-0000-1111-555598671f8c")
 	if url != "https://api.flowdock.com/flows/fmpwizard/huston" {
-		t.Errorf("GetFlowUrl gave %+v", url)
+		t.Errorf("getFlowUrl gave %+v", url)
 	}
 }
 
 func TestGetFlowName(t *testing.T) {
-	name, _ := GetFlowName("aaaaaaaa-d97b-0000-1111-555598671f8c")
+	name, _ := getFlowName("aaaaaaaa-d97b-0000-1111-555598671f8c")
 	if name != "huston" {
-		t.Errorf("GetFlowName gave %+v", name)
+		t.Errorf("getFlowName gave %+v", name)
 	}
 }
 
