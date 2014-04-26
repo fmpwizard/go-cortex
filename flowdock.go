@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 
 var availableFlows []flows
 var currentUsers []user
+var tokenFlowdock = base64.StdEncoding.EncodeToString([]byte(config.FlowdockAccessToken))
 
 //ListenStream starts pulling the flowdock stream api
 func listenStream() {
@@ -32,35 +32,23 @@ func listenStream() {
 
 //fetchFlows fetches all the flows we have access to
 func fetchFlows() {
-	url := fmt.Sprintf("https://%+v@api.flowdock.com/flows", config.FlowdockAccessToken)
-	res, err := http.Get(url)
-	if err != nil {
-		log.Fatalf("Error getting list of flows: %v", err)
-	} else if res.StatusCode != 200 {
-		log.Fatalf("got status code %+v", res.StatusCode)
-	}
-
-	parseAvailableFlows(res.Body)
-	res.Body.Close()
+	performGet("flows", parseAvailableFlows())
 }
 
-func parseAvailableFlows(body io.ReadCloser) {
-	flowsAsJon, err := ioutil.ReadAll(body)
-	if err != nil {
-		log.Fatalf("error reading body, got: %+v", err)
-	}
-
-	if ok := json.Unmarshal(flowsAsJon, &availableFlows); ok != nil {
-		log.Fatalf("Error parsing flows data %+v", ok)
+func parseAvailableFlows() parseCallback {
+	return func(payload []byte) {
+		err := json.Unmarshal(payload, &availableFlows)
+		if err != nil {
+			log.Fatalf("Error parsing flows data %+v", err)
+		}
 	}
 }
 
 func connectToFlow() *http.Response {
 	url := fmt.Sprintf("https://stream.flowdock.com/flows?filter=%s", config.Flows)
-	token := base64.StdEncoding.EncodeToString([]byte(config.FlowdockAccessToken))
 
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
+	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", tokenFlowdock))
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
@@ -76,7 +64,7 @@ func parseFlowRow(reader *bufio.Reader) (flowdockMsg, []byte) {
 
 	line, err := reader.ReadBytes('\r')
 	if err != nil {
-		log.Fatalf("something went wrong reading the body: %s", err)
+		log.Fatalf("something went wrong reading the payload: %s", err)
 	}
 	line = bytes.TrimSpace(line)
 	jsonString := string(line[:])
@@ -192,14 +180,13 @@ func flowdockPost(message string, originalMessageID int64, flowID string) {
 		return
 	}
 	url := fmt.Sprintf("%+v/messages/%+v/comments", flowURL, originalMessageID)
-	token := base64.StdEncoding.EncodeToString([]byte(config.FlowdockAccessToken))
 	client := &http.Client{}
 	payload := []byte(`{
 	  "event": "comment",
 	  "content":"` + message + `"}`)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(payload))
-	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
+	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", tokenFlowdock))
 	req.Header.Add("Content-type", "application/json")
 	res, err := client.Do(req)
 	if err != nil {
@@ -225,6 +212,7 @@ func fToC(f int) int {
 func cToF(c int) int {
 	return c*9/5 + 32
 }
+
 func fetchUsers() {
 	performGet("users", parseUsers())
 }

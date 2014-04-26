@@ -1,12 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"testing"
 )
 
 func TestFlowsParse(t *testing.T) {
-	parseAvailableFlows(NopCloser{NopCloser{bytes.NewBufferString(mockedFlows)}})
+	parseAvailableFlows()([]byte(mockedFlows))
 	if len(availableFlows) != 2 {
 		t.Errorf("parseAvailableFlows didn't parse payload, gave %+v", availableFlows)
 	}
