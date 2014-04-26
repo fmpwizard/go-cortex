@@ -72,34 +72,37 @@ func GetIssueURLForFlowName(parametizedName string) (string, error) {
 
 //ListenStream starts pulling the flowdock stream api
 func ListenStream() {
+	var flowMessage flowdockMsg
+	var flowUpdatedMessage flowdockUpdatedMsg
+	var flowComment flowdockComment
 	FetchFlows()
-	var flowMessage FlowdockMsg
-	var flowUpdatedMessage FlowdockUpdatedMsg
-	var flowComment FlowdockComment
 
 	url := fmt.Sprintf("https://stream.flowdock.com/flows?filter=%s", config.Flows)
-	token := []byte(config.FlowdockAccessToken)
-	str := base64.StdEncoding.EncodeToString(token)
+	token := base64.StdEncoding.EncodeToString([]byte(config.FlowdockAccessToken))
+
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", str))
+	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", token))
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Panic(err)
+		log.Panic("could not fetch streaming api ", err)
 	}
-	if res.StatusCode == 401 {
-		log.Fatalln("Got 401 from flowdock.")
+	if res.StatusCode != 200 {
+		log.Fatalf("got error code: %s from flowdock.", res.StatusCode)
 	}
 
 	defer res.Body.Close()
 	reader := bufio.NewReader(res.Body)
 	for {
-		line, _ := reader.ReadBytes('\r')
+		line, err := reader.ReadBytes('\r')
+		if err != nil {
+			log.Fatalf("something went wrong reading the body: %s", err)
+		}
 		line = bytes.TrimSpace(line)
 		jsonString := string(line[:])
 		_ = jsonString
 		if len(jsonString) < 4 {
-			log.Fatalln("Got empty response from glowdock, shutting down")
+			log.Fatalln("Got empty response from flowdock, shutting down")
 			os.Exit(1)
 		}
 		//log.Printf("Flowdock stream string response: %v\n\n", jsonString)
@@ -218,8 +221,8 @@ func cToF(c int) int {
 	return c*9/5 + 32
 }
 
-//FlowdockMsg struct all the information we care about from flowdock message of type message
-type FlowdockMsg struct {
+//flowdockMsg struct all the information we care about from flowdock message of type message
+type flowdockMsg struct {
 	Event   string
 	Tags    []string
 	Uuid    string
@@ -231,8 +234,8 @@ type FlowdockMsg struct {
 	User    string
 }
 
-//FlowdockUpdatedMsg struct all the information we care about from flowdock message of type update message
-type FlowdockUpdatedMsg struct {
+//flowdockUpdatedMsg struct all the information we care about from flowdock message of type update message
+type flowdockUpdatedMsg struct {
 	Event   string
 	Tags    []string
 	Uuid    string
@@ -249,8 +252,8 @@ type flowdockContent struct {
 	Updated_content string
 }
 
-//FlowdockComment struct all the information we care about from flowdock message of type comment
-type FlowdockComment struct {
+//flowdockComment struct all the information we care about from flowdock message of type comment
+type flowdockComment struct {
 	Event   string
 	Tags    []string
 	Uuid    string
