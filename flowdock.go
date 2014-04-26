@@ -72,11 +72,18 @@ func GetIssueURLForFlowName(parametizedName string) (string, error) {
 
 //ListenStream starts pulling the flowdock stream api
 func ListenStream() {
-	var flowMessage flowdockMsg
-	var flowUpdatedMessage flowdockUpdatedMsg
-	var flowComment flowdockComment
-	FetchFlows()
 
+	FetchFlows()
+	res := connectToFlow()
+	defer res.Body.Close()
+	for {
+		flowMessage, line := parseFlowRow(bufio.NewReader(res.Body))
+		processFlowRow(flowMessage, line)
+
+	}
+}
+
+func connectToFlow() *http.Response {
 	url := fmt.Sprintf("https://stream.flowdock.com/flows?filter=%s", config.Flows)
 	token := base64.StdEncoding.EncodeToString([]byte(config.FlowdockAccessToken))
 
@@ -85,55 +92,58 @@ func ListenStream() {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Panic("could not fetch streaming api ", err)
+		log.Fatalln("could not fetch streaming api ", err)
 	}
 	if res.StatusCode != 200 {
-		log.Fatalf("got error code: %s from flowdock.", res.StatusCode)
+		log.Fatalf("got error code: %+v from flowdock.\n", res.StatusCode)
 	}
 
-	defer res.Body.Close()
-	reader := bufio.NewReader(res.Body)
-	for {
-		line, err := reader.ReadBytes('\r')
-		if err != nil {
-			log.Fatalf("something went wrong reading the body: %s", err)
-		}
-		line = bytes.TrimSpace(line)
-		jsonString := string(line[:])
-		_ = jsonString
-		if len(jsonString) < 4 {
-			log.Fatalln("Got empty response from flowdock, shutting down")
-			os.Exit(1)
-		}
-		//log.Printf("Flowdock stream string response: %v\n\n", jsonString)
-		json.Unmarshal(line, &flowMessage)
-		var parentMessageID = flowMessage.Id
+	return res
+}
 
-		switch flowMessage.Event {
-		case "message-edit":
-			json.Unmarshal(line, &flowUpdatedMessage)
-			//log.Printf("parsed1: %+v\n\n", flowUpdatedMessage)
-			ret := ProcessIntent(FetchIntent(flowUpdatedMessage.Content.Updated_content))
-			replyToFlow(ret, flowUpdatedMessage.Id, flowUpdatedMessage.Flow)
-		case "message":
-			//log.Printf("parsed2: %+v\n\n", flowMessage)
-			ret := ProcessIntent(FetchIntent(flowMessage.Content))
-			replyToFlow(ret, flowMessage.Id, flowMessage.Flow)
-		case "comment":
-			if flowMessage.User != "77156" {
-				json.Unmarshal(line, &flowComment)
-				//log.Printf("parsed2: %+v\n\n", flowComment)
-				ret := ProcessIntent(FetchIntent(flowComment.Content.Text))
-				for _, v := range flowComment.Tags {
-					if strings.Contains(v, "influx") {
-						parentID, _ := strconv.ParseInt(strings.Split(v, ":")[1], 0, 64)
-						parentMessageID = parentID
-					}
+func parseFlowRow(reader *bufio.Reader) (flowdockMsg, []byte) {
+
+	line, err := reader.ReadBytes('\r')
+	if err != nil {
+		log.Fatalf("something went wrong reading the body: %s", err)
+	}
+	line = bytes.TrimSpace(line)
+	jsonString := string(line[:])
+	if len(jsonString) < 4 {
+		log.Fatalln("got empty response from flowdock, shutting down")
+		os.Exit(1)
+	}
+	var flowMessage flowdockMsg
+	json.Unmarshal(line, &flowMessage)
+	return flowMessage, line
+}
+
+func processFlowRow(flowMessage flowdockMsg, line []byte) {
+	var flowUpdatedMessage flowdockUpdatedMsg
+	var flowComment flowdockComment
+
+	switch flowMessage.Event {
+	case "message":
+		ret := ProcessIntent(FetchIntent(flowMessage.Content))
+		replyToFlow(ret, flowMessage.Id, flowMessage.Flow)
+	case "message-edit":
+		json.Unmarshal(line, &flowUpdatedMessage)
+		ret := ProcessIntent(FetchIntent(flowUpdatedMessage.Content.Updated_content))
+		replyToFlow(ret, flowUpdatedMessage.Id, flowUpdatedMessage.Flow)
+	case "comment":
+		if flowMessage.User != "77156" {
+			var parentMessageID int64
+			json.Unmarshal(line, &flowComment)
+			ret := ProcessIntent(FetchIntent(flowComment.Content.Text))
+			for _, v := range flowComment.Tags {
+				if strings.Contains(v, "influx") {
+					parentID, _ := strconv.ParseInt(strings.Split(v, ":")[1], 0, 64)
+					parentMessageID = parentID
 				}
-				replyToFlow(ret, parentMessageID, flowComment.Flow)
-			} else {
-				//log.Println("skipping Cortex's message.")
 			}
+			replyToFlow(ret, parentMessageID, flowComment.Flow)
+		} else {
+			//log.Println("skipping Cortex's message.")
 		}
 	}
 }
