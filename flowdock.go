@@ -18,6 +18,7 @@ import (
 
 var availableFlows []Flows
 
+//FetchFlows fetches all the flows we have access to
 func FetchFlows() {
 	url := fmt.Sprintf("https://%+v@api.flowdock.com/flows", config.FlowdockAccessToken)
 	res, err := http.Get(url)
@@ -27,6 +28,7 @@ func FetchFlows() {
 	FlowsParse(res.Body)
 }
 
+//FlowsParse parses the json response from flowdock into a struct
 func FlowsParse(body io.ReadCloser) []Flows {
 	flowsAsJon, _ := ioutil.ReadAll(body)
 
@@ -37,7 +39,8 @@ func FlowsParse(body io.ReadCloser) []Flows {
 	return availableFlows
 }
 
-func GetFlowUrl(id string) (string, error) {
+//GetFlowURL given a flow id as string, return the url for the flow
+func GetFlowURL(id string) (string, error) {
 	for _, flow := range availableFlows {
 		if flow.Id == id {
 			return flow.Url, nil
@@ -46,6 +49,7 @@ func GetFlowUrl(id string) (string, error) {
 	return "", errors.New("Flow url not found by key " + id)
 }
 
+//GetFlowName given a flow id as string, return the name of the flow
 func GetFlowName(id string) (string, error) {
 	for _, flow := range availableFlows {
 		if flow.Id == id {
@@ -55,7 +59,8 @@ func GetFlowName(id string) (string, error) {
 	return "", errors.New("Flow url not found by key " + id)
 }
 
-func GetIssueUrlForFlowName(parametizedName string) (string, error) {
+//GetIssueURLForFlowName given a flow name, return the issues url for it
+func GetIssueURLForFlowName(parametizedName string) (string, error) {
 	for _, row := range config.FlowsTicketsUrls {
 		url, ok := row[parametizedName]
 		if ok {
@@ -65,6 +70,7 @@ func GetIssueUrlForFlowName(parametizedName string) (string, error) {
 	return "", errors.New("Could not find issue url for flow: " + parametizedName)
 }
 
+//ListenStream starts pulling the flowdock stream api
 func ListenStream() {
 	FetchFlows()
 	var flowMessage FlowdockMsg
@@ -98,7 +104,7 @@ func ListenStream() {
 		}
 		//log.Printf("Flowdock stream string response: %v\n\n", jsonString)
 		json.Unmarshal(line, &flowMessage)
-		var parentMessageId = flowMessage.Id
+		var parentMessageID = flowMessage.Id
 
 		switch flowMessage.Event {
 		case "message-edit":
@@ -117,11 +123,11 @@ func ListenStream() {
 				ret := ProcessIntent(FetchIntent(flowComment.Content.Text))
 				for _, v := range flowComment.Tags {
 					if strings.Contains(v, "influx") {
-						parentId, _ := strconv.ParseInt(strings.Split(v, ":")[1], 0, 64)
-						parentMessageId = parentId
+						parentID, _ := strconv.ParseInt(strings.Split(v, ":")[1], 0, 64)
+						parentMessageID = parentID
 					}
 				}
-				replyToFlow(ret, parentMessageId, flowComment.Flow)
+				replyToFlow(ret, parentMessageID, flowComment.Flow)
 			} else {
 				//log.Println("skipping Cortex's message.")
 			}
@@ -129,49 +135,49 @@ func ListenStream() {
 	}
 }
 
-func replyToFlow(ret WitResponse, originalMessageId int64, flowId string) {
+func replyToFlow(ret WitResponse, originalMessageID int64, flowID string) {
 	if ret.Temperature.Unit != "" {
-		handleTemperature(ret, originalMessageId, flowId)
+		handleTemperature(ret, originalMessageID, flowID)
 	} else if len(ret.Github.issues) > 0 {
-		handleGithub(ret, originalMessageId, flowId)
+		handleGithub(ret, originalMessageID, flowID)
 	}
 
 }
 
-func handleTemperature(ret WitResponse, originalMessageId int64, flowId string) {
+func handleTemperature(ret WitResponse, originalMessageID int64, flowID string) {
 	temperature := ret.Temperature.Degrees
 	switch ret.Temperature.Unit {
 	case "C":
-		FlowdockPost(fmt.Sprintf("Which is %+vF", CToF(temperature)), originalMessageId, flowId)
+		flowdockPost(fmt.Sprintf("Which is %+vF", cToF(temperature)), originalMessageID, flowID)
 	case "F":
-		FlowdockPost(fmt.Sprintf("Which is %+vC", FToC(temperature)), originalMessageId, flowId)
+		flowdockPost(fmt.Sprintf("Which is %+vC", fToC(temperature)), originalMessageID, flowID)
 	}
 }
 
-func handleGithub(ret WitResponse, originalMessageId int64, flowId string) {
+func handleGithub(ret WitResponse, originalMessageID int64, flowID string) {
 	for _, issue := range ret.Github.issues {
-		flowParametizedName, error := GetFlowName(flowId)
+		flowParametizedName, error := GetFlowName(flowID)
 		if error != nil {
-			log.Printf("Error trying to get parametized flow name for id %v", flowId)
+			log.Printf("Error trying to get parametized flow name for id %v", flowID)
 		}
-		issueUrl, error := GetIssueUrlForFlowName(flowParametizedName)
+		issueURL, error := GetIssueURLForFlowName(flowParametizedName)
 		if error != nil {
 			log.Printf("%s", error)
 		}
 
 		//log.Println("\n\n\n\n\n\n\n\nflowParametizedName ", flowParametizedName)
-		//log.Println("issueUrl ", issueUrl)
-		url := fmt.Sprintf("just click here: %+v%+v", issueUrl, issue)
-		FlowdockPost(url, originalMessageId, flowId)
+		//log.Println("issueURL ", issueURL)
+		url := fmt.Sprintf("just click here: %+v%+v", issueURL, issue)
+		flowdockPost(url, originalMessageID, flowID)
 	}
 }
 
-func FlowdockPost(message string, originalMessageId int64, flowId string) {
-	flowUrl, err := GetFlowUrl(flowId)
+func flowdockPost(message string, originalMessageID int64, flowID string) {
+	flowURL, err := GetFlowURL(flowID)
 	if err != nil {
 		log.Panicf("Error getting flow id, got %v", err)
 	}
-	url := fmt.Sprintf("%+v/messages/%+v/comments", flowUrl, originalMessageId)
+	url := fmt.Sprintf("%+v/messages/%+v/comments", flowURL, originalMessageID)
 	token := []byte(config.FlowdockAccessToken)
 	str := base64.StdEncoding.EncodeToString(token)
 	client := &http.Client{}
@@ -204,14 +210,15 @@ func FlowdockPost(message string, originalMessageId int64, flowId string) {
 	}
 }
 
-func FToC(f int) int {
+func fToC(f int) int {
 	return (f - 32) * 5 / 9
 }
 
-func CToF(c int) int {
+func cToF(c int) int {
 	return c*9/5 + 32
 }
 
+//FlowdockMsg struct all the information we care about from flowdock message of type message
 type FlowdockMsg struct {
 	Event   string
 	Tags    []string
@@ -224,6 +231,7 @@ type FlowdockMsg struct {
 	User    string
 }
 
+//FlowdockUpdatedMsg struct all the information we care about from flowdock message of type update message
 type FlowdockUpdatedMsg struct {
 	Event   string
 	Tags    []string
@@ -231,16 +239,17 @@ type FlowdockUpdatedMsg struct {
 	Persist bool
 	Id      int64
 	Flow    string
-	Content FlowdockContent
+	Content flowdockContent
 	Sent    int64
 	User    string
 }
 
-type FlowdockContent struct {
+type flowdockContent struct {
 	Message         float64
 	Updated_content string
 }
 
+//FlowdockComment struct all the information we care about from flowdock message of type comment
 type FlowdockComment struct {
 	Event   string
 	Tags    []string
@@ -248,16 +257,17 @@ type FlowdockComment struct {
 	Persist bool
 	Id      int64
 	Flow    string
-	Content FlowdockCommentContent
+	Content flowdockCommentContent
 	Sent    int64
 	User    string
 }
 
-type FlowdockCommentContent struct {
+type flowdockCommentContent struct {
 	Title string
 	Text  string
 }
 
+//Flows struct that holds information about all the flows we can access
 type Flows struct {
 	Id                 string
 	Name               string

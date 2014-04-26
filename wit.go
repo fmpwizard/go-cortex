@@ -12,6 +12,8 @@ import (
 	"net/url"
 )
 
+//WitHandler is am http request handler that looks for the "q" query parameter
+//and sends it to Wit for processing.
 func WitHandler(w http.ResponseWriter, r *http.Request) {
 	//read the "q" GET query parameter and pass it to
 	// the wit service
@@ -60,7 +62,7 @@ func FetchVoiceIntent(filePath string) (WitMessage, error) {
 		log.Printf("error: %v reading file", err)
 	}
 	if len(body) == 0 {
-		return WitMessage{}, errors.New("No sound in file")
+		return WitMessage{}, errors.New("no sound in file")
 	}
 
 	url := "https://api.wit.ai/speech"
@@ -171,18 +173,24 @@ func ProcessIntent(jsonResponse WitMessage) WitResponse {
 //These make up the different parts of the wit result
 //There are more options, but I'm using only these so far.
 
+//WitMessage represents the payload we get from Wit as a response to processing
+//the text or voice file we sent.
 type WitMessage struct {
-	MsgId   string `json:"msg_id"`
+	MsgID   string `json:"msg_id"`
 	MsgBody string `json:"msg_body"`
 	Outcome WitMessageOutcome
 }
 
+//WitMessageOutcome gives you the Intent, the entities and a confidence value
+//which you can use to discard or accept the intent we get from Wit.
+//Lower than 0.8 means they are not very accurate.
 type WitMessageOutcome struct {
 	Intent     string
-	Entities   WitMessageEntities `json:"entities"`
+	Entities   WitMessageEntities
 	Confidence float64
 }
 
+//WitMessageEntities contains all the possible entities we process from Wit
 type WitMessageEntities struct {
 	Location       WitLocation
 	OnOff          WitOnOff
@@ -192,6 +200,7 @@ type WitMessageEntities struct {
 	Temperature    WitTemperature
 }
 
+//WitLocation is the Location entity
 type WitLocation struct {
 	End       int
 	Start     int
@@ -200,10 +209,12 @@ type WitLocation struct {
 	Suggested bool
 }
 
+//WitOnOff is the on_off entity
 type WitOnOff struct {
-	Value string `json:"value"`
+	Value string
 }
 
+//WitNumber is the wit/number entity
 type WitNumber struct {
 	End   int
 	Start int
@@ -211,6 +222,7 @@ type WitNumber struct {
 	Body  string
 }
 
+//WitTemperature gives you the numeric value plus the units as a string
 type WitTemperature struct {
 	End   int
 	Start int
@@ -218,27 +230,32 @@ type WitTemperature struct {
 	Body  string
 }
 
+//WitTemperatureValue is the actual value and unit
 type WitTemperatureValue struct {
 	Unit        string
 	Temperature int
 }
 
+//WitResponse holds just the information you need to act on each intent
 type WitResponse struct {
 	Arduino     WitArduinoResponse
 	Temperature WitTemperatureResponse
 	Github      WitGithubResponse
 }
 
+//WitArduinoResponse gives you the light number and a string representing on/off for the light number
 type WitArduinoResponse struct {
 	Light  int
 	Action string
 }
 
+//WitTemperatureResponse gives you the Unit and degrees
 type WitTemperatureResponse struct {
 	Unit    string
 	Degrees int
 }
 
+//WitGithubResponse gives you a slice of issue numbers
 type WitGithubResponse struct {
 	issues []int
 }

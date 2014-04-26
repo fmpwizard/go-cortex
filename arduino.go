@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-var c *goserial.Config = &goserial.Config{}
+var c = &goserial.Config{}
 var s io.ReadWriteCloser
 
 //We init the usb connection only once, at boot time.

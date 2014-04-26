@@ -1,3 +1,4 @@
+//Go-Cortex is a robot that uses the wit.ai api to let you control arduinos, as well as interact with flowdock
 package main
 
 import (
@@ -46,6 +47,7 @@ func readCortexConfig() {
 	log.Printf("Using configuration: %+v", config)
 }
 
+//CortexConfig hold the configuration for Cortex to work.
 type CortexConfig struct {
 	HttpPort            string
 	FlowdockAccessToken string

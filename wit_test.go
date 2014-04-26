@@ -14,8 +14,8 @@ func (NopCloser) Close() error { return nil }
 
 func TestProcessWitResponseGithubMultipleIssues(t *testing.T) {
 
-	witJson := stringToReadeClosser(githubMultipleIssues)
-	numbers := ProcessWitResponse(witJson).Outcome.Entities.MultipleNumber
+	withJSON := stringToReadeClosser(githubMultipleIssues)
+	numbers := ProcessWitResponse(withJSON).Outcome.Entities.MultipleNumber
 
 	if len(numbers) != 2 {
 		t.Errorf("ProcessWitResponse didn't parse the 'numbers' array. We got %+v\n", numbers)
@@ -24,8 +24,8 @@ func TestProcessWitResponseGithubMultipleIssues(t *testing.T) {
 
 func TestProcessWitResponseGithubSingleIssue(t *testing.T) {
 
-	witJson := stringToReadeClosser(githubSingleIssue)
-	number := ProcessWitResponse(witJson).Outcome.Entities.MultipleNumber
+	withJSON := stringToReadeClosser(githubSingleIssue)
+	number := ProcessWitResponse(withJSON).Outcome.Entities.MultipleNumber
 
 	if len(number) != 1 {
 		t.Errorf("ProcessWitResponse didn't parse the 'number' object. We got %+v\n", number)
@@ -38,8 +38,8 @@ func TestProcessWitResponseGithubSingleIssue(t *testing.T) {
 
 func TestProcessWitResponseSingleLight(t *testing.T) {
 
-	witJson := stringToReadeClosser(lightPayload)
-	number := ProcessWitResponse(witJson).Outcome.Entities.SingleNumber
+	withJSON := stringToReadeClosser(lightPayload)
+	number := ProcessWitResponse(withJSON).Outcome.Entities.SingleNumber
 
 	if number.Value != 1 {
 		t.Errorf("ProcessWitResponse didn't parse the 'number' object. We got %+v\n", number)

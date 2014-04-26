@@ -13,7 +13,7 @@ func TestFlowsParse(t *testing.T) {
 }
 
 func TestGetFlowUrl(t *testing.T) {
-	url, _ := GetFlowUrl("aaaaaaaa-d97b-0000-1111-555598671f8c")
+	url, _ := GetFlowURL("aaaaaaaa-d97b-0000-1111-555598671f8c")
 	if url != "https://api.flowdock.com/flows/fmpwizard/huston" {
 		t.Errorf("GetFlowUrl gave %+v", url)
 	}
