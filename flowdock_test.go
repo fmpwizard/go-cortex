@@ -6,7 +6,7 @@ import (
 )
 
 func TestFlowsParse(t *testing.T) {
-	parseAvailableFlows(NopCloser{NopCloser{bytes.NewBufferString(MockedFlows)}})
+	parseAvailableFlows(NopCloser{NopCloser{bytes.NewBufferString(mockedFlows)}})
 	if len(availableFlows) != 2 {
 		t.Errorf("parseAvailableFlows didn't parse payload, gave %+v", availableFlows)
 	}
@@ -26,7 +26,14 @@ func TestGetFlowName(t *testing.T) {
 	}
 }
 
-const MockedFlows = (`[
+func TestParseUsers(t *testing.T) {
+	parseUsers()([]byte(mockedUsers))
+	if len(currentUsers) != 2 {
+		t.Errorf("Didn't get two users, got: %+v", len(currentUsers))
+	}
+}
+
+const mockedFlows = (`[
     {
         "id": "aaaaaaaa-d97b-0000-1111-555598671f8c",
         "name": "Huston",
@@ -76,3 +83,24 @@ const MockedFlows = (`[
         }
     }
 ]`)
+
+const mockedUsers = (`
+[
+    {
+        "id": 4877,
+        "nick": "cortex",
+        "email": "diego+cortex@fmpwizard.com",
+        "avatar": "https://d2cxspbh1aoie1.cloudfront.net/avatars/local/546440c99fa5e511111111111222222222222225/",
+        "name": "Cortex",
+        "website": null
+    },
+    {
+        "id": 31347,
+        "nick": "Diego",
+        "email": "fmpwizard@gmail.com",
+        "avatar": "https://d2cxspbh1aoie1.cloudfront.net/avatars/5fcd8164c5ae83f10f060788840f258e/",
+        "name": "Diego Medina",
+        "website": ""
+    }
+]
+`)

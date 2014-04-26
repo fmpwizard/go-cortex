@@ -138,7 +138,6 @@ func ProcessIntent(jsonResponse WitMessage) WitResponse {
 			Arduino(action, light)
 			msg := fmt.Sprintf("Turning light %v %s", light, action)
 			_ = msg
-			//log.Print(msg)
 			return WitResponse{
 				WitArduinoResponse{light, action},
 				WitTemperatureResponse{},

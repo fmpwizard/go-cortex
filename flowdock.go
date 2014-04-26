@@ -17,10 +17,12 @@ import (
 )
 
 var availableFlows []flows
+var currentUsers []user
 
 //ListenStream starts pulling the flowdock stream api
 func listenStream() {
 	fetchFlows()
+	fetchUsers()
 	res := connectToFlow()
 	defer res.Body.Close()
 	for {
@@ -223,6 +225,35 @@ func fToC(f int) int {
 func cToF(c int) int {
 	return c*9/5 + 32
 }
+func fetchUsers() {
+	performGet("users", parseUsers())
+}
+
+func performGet(path string, f parseCallback) {
+	url := fmt.Sprintf("https://%+v@api.flowdock.com/%+v", config.FlowdockAccessToken, path)
+	res, err := http.Get(url)
+	if err != nil {
+		log.Fatalf("Error getting %+v: %v", path, err)
+	} else if res.StatusCode != 200 {
+		log.Fatalf("got status code %+v", res.StatusCode)
+	}
+	usersAsJon, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalf("error reading body, got: %+v", err)
+	}
+	f([]byte(usersAsJon))
+	res.Body.Close()
+}
+
+func parseUsers() parseCallback {
+	return func(payload []byte) {
+		err := json.Unmarshal(payload, &currentUsers)
+		if err != nil {
+			log.Printf("Unabled to parse users list, got %+v", err)
+		}
+		return
+	}
+}
 
 //flowdockMsg struct all the information we care about from flowdock message of type message
 type flowdockMsg struct {
@@ -284,3 +315,15 @@ type flows struct {
 	Web_url            string
 	Unread_mentions    int
 }
+
+//we fetch all the users currently logged in and use this struct to stuff them into
+type user struct {
+	ID      int32
+	Nick    string
+	Email   string
+	Avatar  string
+	Mame    string
+	Website string
+}
+
+type parseCallback func([]byte)
