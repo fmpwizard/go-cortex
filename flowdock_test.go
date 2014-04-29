@@ -32,6 +32,14 @@ func TestParseUsers(t *testing.T) {
 	}
 }
 
+func TestGetCortexUserID(t *testing.T) {
+	parseUsers()([]byte(mockedUsers))
+	userID := getCortexUserID("diego+cortex@fmpwizard.com")
+	if userID != 4877 {
+		t.Errorf("Didn't get the expected user ID, got %+v", userID)
+	}
+}
+
 const mockedFlows = (`[
     {
         "id": "aaaaaaaa-d97b-0000-1111-555598671f8c",

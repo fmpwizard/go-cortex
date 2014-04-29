@@ -97,6 +97,7 @@ func ProcessWitResponse(message io.ReadCloser) WitMessage {
 	err := json.Unmarshal(intent, &jsonResponse)
 	if err != nil {
 		log.Println("error parsing json: ", err)
+		log.Printf("plain text json was %+v", jsonString)
 	}
 
 	var numbers []WitNumber

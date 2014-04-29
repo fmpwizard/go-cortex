@@ -1,5 +1,6 @@
 {
   "httpPort": "7070",
+  "cortex-email": "diego+cortex@fmpwizard.com",
   "flowdockAccessToken": "token here", 
   "witAccessToken" : "token here",
   "flows": "fmpwizard/mission-control,fmpwizard/another-flow-here",

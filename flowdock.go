@@ -13,16 +13,20 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var availableFlows []flows
 var currentUsers []user
-var tokenFlowdock = base64.StdEncoding.EncodeToString([]byte(config.FlowdockAccessToken))
+
+func tokenFlowdock() string {
+	return base64.StdEncoding.EncodeToString([]byte(config.FlowdockAccessToken))
+}
 
 //ListenStream starts pulling the flowdock stream api
 func listenStream() {
 	fetchFlows()
-	fetchUsers()
+	go fetchUserSchedule()
 	res := connectToFlow()
 	defer res.Body.Close()
 	for {
@@ -45,10 +49,9 @@ func parseAvailableFlows() parseCallback {
 }
 
 func connectToFlow() *http.Response {
-	url := fmt.Sprintf("https://stream.flowdock.com/flows?filter=%s", config.Flows)
-
+	url := fmt.Sprintf("https://%+v@stream.flowdock.com/flows?filter=%s", config.FlowdockAccessToken, config.Flows)
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", tokenFlowdock))
+	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", tokenFlowdock()))
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
@@ -61,7 +64,6 @@ func connectToFlow() *http.Response {
 }
 
 func parseFlowRow(reader *bufio.Reader) (flowdockMsg, []byte) {
-
 	line, err := reader.ReadBytes('\r')
 	if err != nil {
 		log.Fatalf("something went wrong reading the payload: %s", err)
@@ -186,7 +188,7 @@ func flowdockPost(message string, originalMessageID int64, flowID string) {
 	  "content":"` + message + `"}`)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(payload))
-	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", tokenFlowdock))
+	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", tokenFlowdock()))
 	req.Header.Add("Content-type", "application/json")
 	res, err := client.Do(req)
 	if err != nil {
@@ -213,6 +215,13 @@ func cToF(c int) int {
 	return c*9/5 + 32
 }
 
+func fetchUserSchedule() {
+	for _ = range time.Tick(1 * time.Minute) {
+		fetchUsers()
+	}
+
+}
+
 func fetchUsers() {
 	performGet("users", parseUsers())
 }
@@ -225,11 +234,11 @@ func performGet(path string, f parseCallback) {
 	} else if res.StatusCode != 200 {
 		log.Fatalf("got status code %+v", res.StatusCode)
 	}
-	usersAsJon, err := ioutil.ReadAll(res.Body)
+	dataAsJson, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Fatalf("error reading body, got: %+v", err)
 	}
-	f([]byte(usersAsJon))
+	f([]byte(dataAsJson))
 	res.Body.Close()
 }
 
@@ -241,6 +250,15 @@ func parseUsers() parseCallback {
 		}
 		return
 	}
+}
+
+func getCortexUserID(email string) int64 {
+	for _, value := range currentUsers {
+		if value.Email == email {
+			return value.ID
+		}
+	}
+	return 0
 }
 
 //flowdockMsg struct all the information we care about from flowdock message of type message
@@ -306,7 +324,7 @@ type flows struct {
 
 //we fetch all the users currently logged in and use this struct to stuff them into
 type user struct {
-	ID      int32
+	ID      int64
 	Nick    string
 	Email   string
 	Avatar  string

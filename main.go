@@ -50,6 +50,7 @@ func readCortexConfig() {
 //CortexConfig hold the configuration for Cortex to work.
 type CortexConfig struct {
 	HttpPort            string
+	CortexEmail         string
 	FlowdockAccessToken string
 	WitAccessToken      string
 	Flows               string
