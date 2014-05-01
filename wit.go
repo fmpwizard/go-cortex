@@ -68,9 +68,8 @@ func sanitizeQuerryString(str string) (string, error) {
 		log.Println("Somebody talked too much, more than the 256 characters I can read.")
 		errMsg := "Sorry, I can only read up to 256 characters and I didn't want to just ignore the end of your message."
 		return "", errors.New(errMsg)
-	} else {
-		return url.QueryEscape(str), nil
 	}
+	return url.QueryEscape(str), nil
 }
 
 //FetchVoiceIntent is like FetchIntent, but sends a wav file
