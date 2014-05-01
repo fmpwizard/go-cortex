@@ -43,6 +43,7 @@ func FetchIntent(str string) (WitMessage, error) {
 	if err != nil {
 		return WitMessage{}, err
 	}
+
 	url := "https://api.wit.ai/message?q=" + str
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)

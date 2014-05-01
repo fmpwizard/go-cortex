@@ -87,20 +87,20 @@ func processFlowRow(flowMessage flowdockMsg, line []byte) {
 	case "message":
 		intent, err := FetchIntent(flowMessage.Content)
 		if err != nil {
+			witErrorResponseToFlowdock(flowMessage, err)
+		} else {
 			ret := ProcessIntent(intent)
 			replyToFlow(ret, flowMessage.Id, flowMessage.Flow)
-		} else {
-			witErrorResponseToFlowdock(flowMessage, err)
 		}
 
 	case "message-edit":
 		json.Unmarshal(line, &flowUpdatedMessage)
 		intent, err := FetchIntent(flowUpdatedMessage.Content.Updated_content)
 		if err != nil {
+			witErrorResponseToFlowdock(flowMessage, err)
+		} else {
 			ret := ProcessIntent(intent)
 			replyToFlow(ret, flowUpdatedMessage.Id, flowUpdatedMessage.Flow)
-		} else {
-			witErrorResponseToFlowdock(flowMessage, err)
 		}
 
 	case "comment":
@@ -109,6 +109,9 @@ func processFlowRow(flowMessage flowdockMsg, line []byte) {
 			json.Unmarshal(line, &flowComment)
 			intent, err := FetchIntent(flowComment.Content.Text)
 			if err != nil {
+				flowMessage.Id = parentMessageID
+				witErrorResponseToFlowdock(flowMessage, err)
+			} else {
 				ret := ProcessIntent(intent)
 				for _, v := range flowComment.Tags {
 					if strings.Contains(v, "influx") {
@@ -117,19 +120,8 @@ func processFlowRow(flowMessage flowdockMsg, line []byte) {
 					}
 				}
 				replyToFlow(ret, parentMessageID, flowComment.Flow)
-			} else {
-				flowMessage.Id = parentMessageID
-				witErrorResponseToFlowdock(flowMessage, err)
 			}
 
-			ret := ProcessIntent(intent)
-			for _, v := range flowComment.Tags {
-				if strings.Contains(v, "influx") {
-					parentID, _ := strconv.ParseInt(strings.Split(v, ":")[1], 0, 64)
-					parentMessageID = parentID
-				}
-			}
-			replyToFlow(ret, parentMessageID, flowComment.Flow)
 		} else {
 			//log.Println("skipping Cortex's message.")
 		}
@@ -142,7 +134,7 @@ func witErrorResponseToFlowdock(flowMessage flowdockMsg, err error) {
 			WitArduinoResponse{},
 			WitTemperatureResponse{},
 			WitGithubResponse{},
-			witError{err.Error()},
+			witError{fmt.Sprintf("Error: %+v", err)},
 		}
 	replyToFlow(ret, flowMessage.Id, flowMessage.Flow)
 }
@@ -183,6 +175,8 @@ func replyToFlow(ret WitResponse, originalMessageID int64, flowID string) {
 		handleTemperature(ret, originalMessageID, flowID)
 	} else if len(ret.Github.issues) > 0 {
 		handleGithub(ret, originalMessageID, flowID)
+	} else if ret.Error.msg != "" {
+		flowdockPost(ret.Error.msg, originalMessageID, flowID)
 	}
 
 }
