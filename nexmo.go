@@ -17,9 +17,15 @@ func NexmoHandler(w http.ResponseWriter, r *http.Request) {
 	typ := r.FormValue("type")
 	timestamp := r.FormValue("message-timestamp=")
 	if len(text) > 0 && typ == "text" {
-		ret := ProcessIntent(FetchIntent(text))
-		log.Printf("We got messageID: %v on %v ", messageID, timestamp)
-		log.Printf("Wit gave us: %+v ", ret)
+		intent, err := FetchIntent(text)
+		if err != nil {
+			log.Printf("Error: %+v", err)
+		} else {
+			ret := ProcessIntent(intent)
+			log.Printf("We got messageID: %v on %v ", messageID, timestamp)
+			log.Printf("Wit gave us: %+v ", ret)
+		}
+
 	} else {
 		log.Print("Error: we got a blank text message")
 	}

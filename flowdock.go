@@ -85,17 +85,44 @@ func processFlowRow(flowMessage flowdockMsg, line []byte) {
 
 	switch flowMessage.Event {
 	case "message":
-		ret := ProcessIntent(FetchIntent(flowMessage.Content))
-		replyToFlow(ret, flowMessage.Id, flowMessage.Flow)
+		intent, err := FetchIntent(flowMessage.Content)
+		if err != nil {
+			ret := ProcessIntent(intent)
+			replyToFlow(ret, flowMessage.Id, flowMessage.Flow)
+		} else {
+			witErrorResponseToFlowdock(flowMessage, err)
+		}
+
 	case "message-edit":
 		json.Unmarshal(line, &flowUpdatedMessage)
-		ret := ProcessIntent(FetchIntent(flowUpdatedMessage.Content.Updated_content))
-		replyToFlow(ret, flowUpdatedMessage.Id, flowUpdatedMessage.Flow)
+		intent, err := FetchIntent(flowUpdatedMessage.Content.Updated_content)
+		if err != nil {
+			ret := ProcessIntent(intent)
+			replyToFlow(ret, flowUpdatedMessage.Id, flowUpdatedMessage.Flow)
+		} else {
+			witErrorResponseToFlowdock(flowMessage, err)
+		}
+
 	case "comment":
 		if flowMessage.User != "77156" {
 			var parentMessageID int64
 			json.Unmarshal(line, &flowComment)
-			ret := ProcessIntent(FetchIntent(flowComment.Content.Text))
+			intent, err := FetchIntent(flowComment.Content.Text)
+			if err != nil {
+				ret := ProcessIntent(intent)
+				for _, v := range flowComment.Tags {
+					if strings.Contains(v, "influx") {
+						parentID, _ := strconv.ParseInt(strings.Split(v, ":")[1], 0, 64)
+						parentMessageID = parentID
+					}
+				}
+				replyToFlow(ret, parentMessageID, flowComment.Flow)
+			} else {
+				flowMessage.Id = parentMessageID
+				witErrorResponseToFlowdock(flowMessage, err)
+			}
+
+			ret := ProcessIntent(intent)
 			for _, v := range flowComment.Tags {
 				if strings.Contains(v, "influx") {
 					parentID, _ := strconv.ParseInt(strings.Split(v, ":")[1], 0, 64)
@@ -107,6 +134,17 @@ func processFlowRow(flowMessage flowdockMsg, line []byte) {
 			//log.Println("skipping Cortex's message.")
 		}
 	}
+}
+
+func witErrorResponseToFlowdock(flowMessage flowdockMsg, err error) {
+	ret :=
+		WitResponse{
+			WitArduinoResponse{},
+			WitTemperatureResponse{},
+			WitGithubResponse{},
+			witError{err.Error()},
+		}
+	replyToFlow(ret, flowMessage.Id, flowMessage.Flow)
 }
 
 //getFlowURL given a flow id as string, return the url for the flow

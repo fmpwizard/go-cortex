@@ -19,10 +19,16 @@ func WitHandler(w http.ResponseWriter, r *http.Request) {
 	// the wit service
 	message := r.FormValue("q")
 	if len(message) > 0 {
-		ret := ProcessIntent(FetchIntent(message))
-		//print what we understood from your request to the browser.
-		msg := fmt.Sprintf("Turning light %v %s", ret.Arduino.Light, ret.Arduino.Action)
-		fmt.Fprintf(w, msg)
+		intent, err := FetchIntent(message)
+		if err != nil {
+			log.Printf("Error: %+v", err)
+		} else {
+			ret := ProcessIntent(intent)
+			//print what we understood from your request to the browser.
+			msg := fmt.Sprintf("Turning light %v %s", ret.Arduino.Light, ret.Arduino.Action)
+			fmt.Fprintf(w, msg)
+		}
+
 	} else {
 		fmt.Fprintf(w, "Please add a /wit?q=<text here> to the url")
 	}
@@ -31,9 +37,13 @@ func WitHandler(w http.ResponseWriter, r *http.Request) {
 //FetchIntent is the whole go wit wrapper, if you call it that.
 //We send the query string to wit, parse the result json
 //into a struct and return it.
-func FetchIntent(str string) WitMessage {
+func FetchIntent(str string) (WitMessage, error) {
 
-	url := "https://api.wit.ai/message?q=" + url.QueryEscape(str)
+	str, err := sanitizeQuerryString(str)
+	if err != nil {
+		return WitMessage{}, err
+	}
+	url := "https://api.wit.ai/message?q=" + str
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", config.WitAccessToken))
@@ -44,12 +54,22 @@ func FetchIntent(str string) WitMessage {
 	}
 
 	defer res.Body.Close()
-	if res.StatusCode == 401 {
-		log.Fatalln("Access denied, check your wit access token ")
+	if res.StatusCode != 200 {
+		log.Println("Something went really wrong with the response from Wit.ai")
+		errMsg := "Sorry, the machine learning service I use for my brain went down, @Diego: check the logs, there may be something for you there."
+		return WitMessage{}, errors.New(errMsg)
 	}
+	return ProcessWitResponse(res.Body), nil
+}
 
-	return ProcessWitResponse(res.Body)
-
+func sanitizeQuerryString(str string) (string, error) {
+	if len(url.QueryEscape(str)) > 255 {
+		log.Println("Somebody talked too much, more than the 256 characters I can read.")
+		errMsg := "Sorry, I can only read up to 256 characters and I didn't want to just ignore the end of your message."
+		return "", errors.New(errMsg)
+	} else {
+		return url.QueryEscape(str), nil
+	}
 }
 
 //FetchVoiceIntent is like FetchIntent, but sends a wav file
@@ -143,6 +163,7 @@ func ProcessIntent(jsonResponse WitMessage) WitResponse {
 				WitArduinoResponse{light, action},
 				WitTemperatureResponse{},
 				WitGithubResponse{},
+				witError{},
 			}
 		}
 	case "temperature":
@@ -152,6 +173,7 @@ func ProcessIntent(jsonResponse WitMessage) WitResponse {
 			WitArduinoResponse{},
 			WitTemperatureResponse{unit, temperature},
 			WitGithubResponse{},
+			witError{},
 		}
 	case "github":
 		var issues []int
@@ -164,6 +186,7 @@ func ProcessIntent(jsonResponse WitMessage) WitResponse {
 			WitArduinoResponse{},
 			WitTemperatureResponse{},
 			WitGithubResponse{issues},
+			witError{},
 		}
 
 	}
@@ -241,6 +264,7 @@ type WitResponse struct {
 	Arduino     WitArduinoResponse
 	Temperature WitTemperatureResponse
 	Github      WitGithubResponse
+	Error       witError
 }
 
 //WitArduinoResponse gives you the light number and a string representing on/off for the light number
@@ -258,4 +282,8 @@ type WitTemperatureResponse struct {
 //WitGithubResponse gives you a slice of issue numbers
 type WitGithubResponse struct {
 	issues []int
+}
+
+type witError struct {
+	msg string
 }
