@@ -12,6 +12,8 @@ import (
 	"net/url"
 )
 
+const WIT_VERSION = "20140510"
+
 //WitHandler is am http request handler that looks for the "q" query parameter
 //and sends it to Wit for processing.
 func WitHandler(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +46,7 @@ func FetchIntent(str string) (WitMessage, error) {
 		return WitMessage{}, err
 	}
 
-	url := "https://api.wit.ai/message?q=" + str
+	url := fmt.Sprintf("https://api.wit.ai/message?v=%s&q=%s", WIT_VERSION, str)
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", config.WitAccessToken))
@@ -89,6 +91,7 @@ func FetchVoiceIntent(filePath string) (WitMessage, error) {
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", config.WitAccessToken))
+	req.Header.Add("Accept", fmt.Sprintf("application/vnd.wit.%s+json", WIT_VERSION))
 	req.Header.Add("Content-Type", "audio/wav")
 	log.Println("sending request")
 	res, err := client.Do(req)
