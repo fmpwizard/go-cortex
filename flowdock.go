@@ -49,7 +49,7 @@ func parseAvailableFlows() parseCallback {
 }
 
 func connectToFlow() *http.Response {
-	url := fmt.Sprintf("https://%+v@stream.flowdock.com/flows?filter=%s", config.FlowdockAccessToken, config.Flows)
+	url := fmt.Sprintf("https://%s@stream.flowdock.com/flows?filter=%s", config.FlowdockAccessToken, config.Flows)
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", tokenFlowdock()))
 	client := &http.Client{}
@@ -259,7 +259,7 @@ func fetchUsers() {
 }
 
 func performGet(path string, f parseCallback) {
-	url := fmt.Sprintf("https://%+v@api.flowdock.com/%+v", config.FlowdockAccessToken, path)
+	url := fmt.Sprintf("https://%s@api.flowdock.com/%s", config.FlowdockAccessToken, path)
 	res, err := http.Get(url)
 	if err != nil {
 		log.Fatalf("Error getting %+v: %v", path, err)
@@ -270,7 +270,7 @@ func performGet(path string, f parseCallback) {
 	if err != nil {
 		log.Fatalf("error reading body, got: %+v", err)
 	}
-	f([]byte(dataAsJson))
+	f(dataAsJson)
 	res.Body.Close()
 }
 
