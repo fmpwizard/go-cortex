@@ -1,11 +1,11 @@
-#Go Cortex
+# Go Cortex
 
 `go-cortex` is a service that listens for sentences and tries to understand what you meant and goes off
 to do what you asked for.
 
 In the background it uses [Wit.ai](https://wit.ai/) to process the text and get back an `intent` with some parameters extracted from the sentence.
 
-##Announcement
+## Announcement
 
 I wrote a post explaining `go-cortex`: [Go Cortex - using Wit.ai on a raspberry pi connected to an arduino and written in go](http://goo.gl/4yy9bI)
 
@@ -75,7 +75,7 @@ A sample cortex.config.json is:
 
 and you are ready, if you are running this locally, go to `http://127.0.0.1:8080/wit?q=<some command here>` and see the magic
 
-##SMS
+## SMS
 
 I'm using [Nexmo](https://dashboard.nexmo.com) as an SMS gateway. They gave me an US number that I can send a text to, and as soon as they get it, they send data to a callback url that Cortex listens to, `/sms`.
 
